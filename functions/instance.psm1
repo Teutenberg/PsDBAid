@@ -6,15 +6,18 @@
         String containing the SQL Server to connect to.
 
     .PARAMETER Credential
-        PSCredential object for PsDscRunAsCredential.
+        PSCredential object used for PsDscRunAsCredential.
 
-    .PARAMETER InstanceName
-        String containing the SQL Server Database Engine instance to connect to.
+    .PARAMETER MinMemory
+        Int32 - Minimum memory, default 0. 
 
-    .PARAMETER StatementTimeout
-        Set the query StatementTimeout in seconds. Default 600 seconds (10mins).
+    .PARAMETER MaxMemory
+        Int32 - Maximum memory, ignored if $DynamicAlloc = $true.
+
+    .PARAMETER DynamicAlloc
+        Switch - Sets max memory dynamically, set to true if MaxMemory is $null.
 #>
-function Set-SqlMemory
+function Set-SqlServerMemory
 {
     [CmdletBinding()]
     param
@@ -30,12 +33,12 @@ function Set-SqlMemory
         $Credential,
 
         [Parameter()]
-        [ValidateNotNull()]
+        [ValidateRange("NonNegative")]
         [System.Int32]
         $MinMemory = 0,
 
         [Parameter()]
-        [ValidateNotNull()]
+        [ValidateRange("Positive")]
         [System.Int32]
         $MaxMemory,
 
@@ -45,36 +48,138 @@ function Set-SqlMemory
         $DynamicAlloc
     )
 
-    $SqlServerParts = Split-SqlServerName -SqlServer $SqlServer
+    Write-Output "Checking SqlServerMemory: $SqlServer"
+
+    if ($Credential) {
+        $Server = Connect-Sql -SqlServer $SourceSqlServer -Credential $Credential
+    }
+    else {
+        $Server = Connect-Sql -SqlServer $SourceSqlServer
+    }
  
     $SqlServerMemoryParams = @{
         Ensure               = 'Present'
-        ServerName           = $SqlServerParts.Host
-        InstanceName         = $SqlServerParts.Instance
+        ServerName           = $Server.NetName
+        InstanceName         = $Server.InstanceName
         MinMemory            = $MinMemory
     }
 
-    if ($DynamicAlloc -or -not $MaxMemory) {
-        Write-Verbose -Message "Setting DynamicAlloc to true."
+    Write-Verbose -Message ("ServerName: {0}" -f $Server.NetName)
+    Write-Verbose -Message ("InstanceName: {0}" -f $Server.InstanceName)
+    Write-Verbose -Message ("MinMemory: {0}" -f $MinMemory)
+
+    if ($DynamicAlloc -or [string]::IsNullOrEmpty($MaxMemory)) {
         $SqlServerMemoryParams.Add("DynamicAlloc",$true)
+        Write-Verbose -Message ("DynamicAlloc: {0}" -f $true)
     }
     else {
-        $SqlServerMemoryParams.Add("DynamicAlloc",$false)
         $SqlServerMemoryParams.Add("MaxMemory",$MaxMemory)
+        Write-Verbose -Message ("MaxMemory: {0}" -f $MaxMemory)
     }
 
     if ($Credential) { 
-        Write-Verbose -Message "Setting PsDscRunAsCredential to [$($Credential.UserName)]."
         $SqlServerMemoryParams.Add("PsDscRunAsCredential",$Credential)
+        Write-Verbose -Message ("PsDscRunAsCredential: {0}" -f $Credential.UserName)
     }
 
     if (Invoke-DscResource -ModuleName SqlServerDsc -Name SqlServerMemory -Property $SqlServerMemoryParams -Method Test) {
-        Write-Output "Skipping - SqlServerMemory already configured to desired state on SQL instance [$SqlServer]."
+        Write-Output 'Skipping - already configured to desired state.'
     } 
     else {
-        Write-Output 'Configuring SqlServerMemory to desired state on SQL instance [$SqlServer]...'
+        Write-Output 'Configuring to desired state.'
         Invoke-DscResource -ModuleName SqlServerDsc -Name SqlServerMemory -Property $SqlServerMemoryParams -Method Set -Verbose
     }
+
+    Write-Output "Done."
+}
+
+<#
+    .SYNOPSIS
+        Set the minimum and maximum memory configuration for a SQL Server instance. 
+
+    .PARAMETER SqlServer
+        String containing the SQL Server to connect to.
+
+    .PARAMETER Credential
+        PSCredential object used for PsDscRunAsCredential.
+
+    .PARAMETER MinMemory
+        Int32 - Minimum memory, default 0. 
+
+    .PARAMETER MaxMemory
+        Int32 - Maximum memory, ignored if $DynamicAlloc = $true.
+
+    .PARAMETER DynamicAlloc
+        Switch - Sets max memory dynamically, set to true if MaxMemory is $null.
+#>
+
+
+function Set-SqlServerMaxDop
+{
+    [CmdletBinding()]
+    param
+    (
+        [Parameter()]
+        [ValidateNotNull()]
+        [System.String]
+        $SqlServer = $env:COMPUTERNAME,
+
+        [Parameter()]
+        [ValidateRange("NonNegative")]
+        [System.Int32]
+        $MaxDop,
+
+        [Parameter()]
+        [ValidateNotNull()]
+        [Switch]
+        $DynamicAlloc,
+
+        [Parameter()]
+        [ValidateNotNull()]
+        [System.Management.Automation.PSCredential]
+        $Credential
+    )
+
+    Write-Output "Checking SqlServerMaxDop: $SqlServer"
+
+    if ($Credential) {
+        $Server = Connect-Sql -SqlServer $SourceSqlServer -Credential $Credential
+    }
+    else {
+        $Server = Connect-Sql -SqlServer $SourceSqlServer
+    }
+
+    $SqlMaxDopParams = @{
+        ServerName     = $Server.NetName
+        InstanceName   = $Server.InstanceName
+    }
+
+    Write-Verbose -Message ("ServerName: {0}" -f $Server.NetName)
+    Write-Verbose -Message ("InstanceName: {0}" -f $Server.InstanceName)
+
+    if ($Credential) { 
+        $SqlMaxDopParams.Add("PsDscRunAsCredential",$Credential)
+        Write-Verbose -Message ("PsDscRunAsCredential: {0}" -f $Credential.UserName)
+    }
+
+    if ($DynamicAlloc -or [string]::IsNullOrEmpty($MaxDop)) {
+        $SqlMaxDopParams.Add('DynamicAlloc', $true)
+        Write-Verbose -Message ("DynamicAlloc: {0}" -f $true)
+    }
+    elseif ($MaxDop -ge 0) {
+        $SqlMaxDopParams.Add('MaxDop', $MaxDop)
+        Write-Verbose -Message ("MaxDop: {0}" -f $MaxDop)
+    }
+    
+    if (Invoke-DscResource -ModuleName SqlServerDsc -Name SqlServerMaxDop -Property $SqlMaxDopParams -Method Test) {
+        Write-Output 'Skipping - already configured to desired state.'
+    } 
+    else {
+        Write-Output "Configuring to desired state."
+        Invoke-DscResource -ModuleName SqlServerDsc -Name SqlServerMaxDop -Property $SqlMaxDopParams -Method Set -Verbose
+    }
+
+    Write-Output "Done."
 }
 
 
@@ -190,20 +295,17 @@ function Copy-Login
         Backup the service master key to a file.
 
     .PARAMETER SqlServer
-        String containing the SQL Server.
+        String - SQL Server HOST\INSTANCE,PORT.
+
+    .PARAMETER Path
+        String - path where you want to save the file. 
+
+    .PARAMETER Secret
+        String - alphanumeric secret used to protect key file. 
 
     .PARAMETER Credential
         PSCredential object with the credentials to use to impersonate a user when connecting.
         If this is not provided then the current user will be used to connect to the SQL Server Database Engine instance.
-
-    .PARAMETER Filter
-        String filter returns only logins like pattern. Default value = "*"
-
-    .PARAMETER Include
-        String array of logins that will be included. 
-
-    .PARAMETER Exclude
-        String array of logins that will be excluded. 
 #>
 function Backup-ServiceMasterKey
 {
