@@ -31,6 +31,7 @@ function Set-SqlSmbShare
 
         [Parameter()]
         [ValidateNotNull()]
+        [ValidatePattern('^(\w:\\)[a-zA-Z0-9:\\\/ .!@#$%^&()\-_+=]*')]
         [System.String]
         $Directory,
 

@@ -84,23 +84,20 @@ function Enable-LogShipping
 
     $ErrorActionPreference = "Stop"
 
-    $pConnectArgs = @{ SqlServer = $PrimarySqlServer }
-    $sConnectArgs = @{ SqlServer = $SecondarySqlServer }
-
     if ($Credential) {
-        $pConnectArgs.Add('Credential', $Credential)
-        $sConnectArgs.Add('Credential', $Credential)
+        $pSQLServerObject = Connect-Sql -SqlServer $SourceSqlServer -Credential $Credential
+        $sSQLServerObject = Connect-Sql -SqlServer $SourceSqlServer -Credential $Credential
     }
-
-    <# Connect to SQL Servers #>
-    $pSQLServerObject = Connect-Sql @pConnectArgs
-    $sSQLServerObject = Connect-Sql @sConnectArgs
+    else {
+        $pSQLServerObject = Connect-Sql -SqlServer $SourceSqlServer
+        $sSQLServerObject = Connect-Sql -SqlServer $SourceSqlServer
+    }
 
     <# Set direcotries paths #>
     if ([String]::IsNullOrEmpty($PrimaryDir)) { $PrimaryDir = $pSQLServerObject.BackupDirectory }
     if ([String]::IsNullOrEmpty($SecondaryDir)) { $SecondaryDir = $sSQLServerObject.BackupDirectory }
-    $PrimaryDir = Join-Path $PrimaryDir "logshipping-primary\$PrimaryDatabase"
-    $SecondaryDir = Join-Path $SecondaryDir "logshipping-secondary\$SecondaryDatabase"
+    $PrimaryDir = [IO.Path]::Combine($PrimaryDir,'logshipping-primary',$PrimaryDatabase)
+    $SecondaryDir = [IO.Path]::Combine($SecondaryDir,'logshipping-secondary',$SecondaryDatabase)
 
     <# Collect primary variables #>
     $pServerInstance = $pSQLServerObject.Name

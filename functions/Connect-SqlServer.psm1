@@ -37,7 +37,7 @@ function Connect-Sql
     $sqlServerObject = New-Object -TypeName 'Microsoft.SqlServer.Management.Smo.Server'
     $sqlServerObject.ConnectionContext.ServerInstance = $SqlServer
     $sqlServerObject.ConnectionContext.StatementTimeout = $StatementTimeout
-    $sqlServerObject.ConnectionContext.ApplicationName = 'PsDBAid2'
+    $sqlServerObject.ConnectionContext.ApplicationName = 'PsDBAid'
 
     if ($Credential) {
         $connectUsername = $Credential.GetNetworkCredential().UserName
