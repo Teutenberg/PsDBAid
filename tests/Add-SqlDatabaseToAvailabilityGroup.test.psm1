@@ -21,7 +21,7 @@
         When username contains a domain, windows Auth is used, otherwise SQL auth is used. 
         If $null then integrated security is used.
 #>
-function Add-SqlDatabaseToAvailabilityGroup
+function Set-SqlAGDatabase
 {
     [CmdletBinding()]
     param
