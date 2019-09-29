@@ -24,6 +24,11 @@ function Copy-RoboFile
     [CmdletBinding()]
     param
     (
+        [Parameter()]
+        [ValidateNotNullOrEmpty()]
+        [System.String]
+        $ComputerName = $env:COMPUTERNAME,
+
         [Parameter(Mandatory)]
         [ValidateNotNull()]
         [System.String]
@@ -37,6 +42,12 @@ function Copy-RoboFile
         [Parameter()]
         [Switch]
         $Restartable,
+
+        [Parameter()]
+        [ValidateNotNullOrEmpty()]
+        [ValidateRange(1,128)]
+        [System.Byte]
+        $Threads = 8,
 
         [Parameter()]
         [System.Int32]
@@ -63,16 +74,22 @@ function Copy-RoboFile
 
     $SourceFile = $GetItem.Name
     $SourceDirectory = $GetItem.Directory.FullName
-
-    if ($Restartable) {
-        $RoboScript = { & ROBOCOPY "$Using:SourceDirectory" "$Using:DestinationDirectory" "$Using:SourceFile" /z }
+    
+    if ($Restartable) { 
+        $RoboScript = { & robocopy @("$Using:SourceDirectory", "$Using:DestinationDirectory", "$Using:SourceFile", "/MT:$Using:Threads", "/z") }
     }
     else {
-        $RoboScript = { & ROBOCOPY "$Using:SourceDirectory" "$Using:DestinationDirectory" "$Using:SourceFile" }
+        $RoboScript = { & robocopy @("$Using:SourceDirectory", "$Using:DestinationDirectory", "$Using:SourceFile", "/MT:$Using:Threads") }
+    }
+
+    if ($Credential) {
+        $Job = Start-Job -ScriptBlock $RoboScript -Credential $Credential
+    }
+    else {
+        $Job = Start-Job -ScriptBlock $RoboScript
     }
 
     Write-Output "$Start - Starting ROBOCOPY job for file '$SourceFile'."
-    $StartJobs += Start-Job -ScriptBlock $RoboScript
     $PercentCompleted = 0
 
     <# Sleep for 5 then output ROBOCOPY header #>
@@ -88,8 +105,8 @@ function Copy-RoboFile
             $BreakLoop = $false
             $Line = $Job | Receive-Job | Select-Object -Last 1
             
-            if ($Line -match '%' -and $Line -match '[.]') {
-                $PercentCompleted = $Line.Substring(0,$Line.IndexOf('.'))
+            if ($Line -match '%') {
+                $PercentCompleted = $Line.Substring(0,$Line.IndexOf('%'))
                 Write-Progress -Activity $SourceFile -Status "$PercentCompleted% Complete" -PercentComplete $PercentCompleted
             }
         }
