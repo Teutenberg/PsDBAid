@@ -49,10 +49,10 @@ function Set-SqlServerSecureConnection
     Write-Output "Checking SqlServerSecureConnection: $SqlServer"
 
     if ($Credential) {
-        $Server = Connect-Sql -SqlServer $SourceSqlServer -Credential $Credential
+        $Server = Connect-SqlServer -SqlServer $SourceSqlServer -Credential $Credential
     }
     else {
-        $Server = Connect-Sql -SqlServer $SourceSqlServer
+        $Server = Connect-SqlServer -SqlServer $SourceSqlServer
     }
 
     $SqlSecureParams = @{
@@ -79,10 +79,10 @@ function Set-SqlServerSecureConnection
     }
     
     if (Invoke-DscResource -ModuleName SqlServerDsc -Name SqlServerSecureConnection -Property $SqlSecureParams -Method Test) {
-        Write-Output 'Skipping - already configured to desired state.'
+        Write-Output 'In desired state - SqlServerSecureConnection reports to be in desired state.'
     }
     else {
-        Write-Output "Configuring to desired state."
+        Write-Output "Configuring SqlServerSecureConnection to desired state."
         Invoke-DscResource -ModuleName SqlServerDsc -Name SqlServerSecureConnection -Property $SqlSecureParams -Method Set -Verbose
     }
 

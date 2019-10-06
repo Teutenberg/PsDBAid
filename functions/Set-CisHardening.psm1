@@ -53,10 +53,10 @@ function Set-CisHardening
     Write-Output "Setting CIS Hardening Standard: $SqlServer"
 
     if ($Credential) {
-        $Server = Connect-Sql -SqlServer $SourceSqlServer -Credential $Credential
+        $Server = Connect-SqlServer -SqlServer $SourceSqlServer -Credential $Credential
     }
     else {
-        $Server = Connect-Sql -SqlServer $SourceSqlServer
+        $Server = Connect-SqlServer -SqlServer $SourceSqlServer
     }
 
     Write-Verbose -Message ("HideInstance: {0}" -f $HideInstance)

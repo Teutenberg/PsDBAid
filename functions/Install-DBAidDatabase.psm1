@@ -34,7 +34,7 @@ function Install-DbaidDatabase
         $ReleaseZipFile
     )
 
-    $Smo = Connect-Sql -SqlServer $SqlServer -Credential $Credential
+    $Smo = Connect-SqlServer -SqlServer $SqlServer -Credential $Credential
     $Dac = New-Object -TypeName 'Microsoft.SqlServer.Management.Dac'
 
     $DacPath = "\database\bin\Release\_dbaid.dacpac"

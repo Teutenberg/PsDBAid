@@ -46,7 +46,7 @@ function Restore-SqlDatabase
         $Credential    
     )
     
-    $Server = Connect-Sql -SqlServer $SqlServer -Credential $Credential
+    $Server = Connect-SqlServer -SqlServer $SqlServer -Credential $Credential
 
     $Users = $Server.Databases[$Database].Users
 

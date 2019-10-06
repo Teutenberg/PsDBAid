@@ -88,7 +88,7 @@ function Install-SqlServer
     $SqlSetupExe = Get-Item -Path "$SqlSetupPath\setup.exe"
 
     if ($SqlSetupExe) {
-        Write-Output "Initiating SqlSetup..."
+        Write-Verbose -Message "Initiating SqlSetup..."
 
         $SQLMajorVersion = $SqlSetupExe.VersionInfo.ProductVersion.Split('.')[0]
         
@@ -116,9 +116,9 @@ function Install-SqlServer
         }
 
         if (Invoke-DscResource -ModuleName 'SqlServerDsc' -Name 'SqlSetup' -Property $SqlSetupParams -Method Test) {
-            Write-Verbose "Instance with name [$InstanceName] is already installed. Skipping installation..."
+            Write-Output "In desired state - Instance [$InstanceName] already installed."
         } else {
-            Write-Verbose "Installing instance [$InstanceName]"
+            Write-Output "Installing instance [$InstanceName]"
             Invoke-DscResource -ModuleName 'SqlServerDsc' -Name 'SqlSetup' -Property $SqlSetupParams -Method Set -Verbose
         }
     } else {

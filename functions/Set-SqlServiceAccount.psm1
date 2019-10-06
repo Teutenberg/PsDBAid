@@ -51,10 +51,10 @@ function Set-SqlServiceAccount
     Write-Output "Checking SqlServiceAccount: $SqlServer"
 
     if ($Credential) {
-        $Server = Connect-Sql -SqlServer $SourceSqlServer -Credential $Credential
+        $Server = Connect-SqlServer -SqlServer $SourceSqlServer -Credential $Credential
     }
     else {
-        $Server = Connect-Sql -SqlServer $SourceSqlServer
+        $Server = Connect-SqlServer -SqlServer $SourceSqlServer
     }
 
     $SqlServiceParams = @{
@@ -74,10 +74,10 @@ function Set-SqlServiceAccount
     Write-Verbose -Message ("Force: {0}" -f $Force)
 
     if (Invoke-DscResource -ModuleName SqlServerDsc -Name SqlServiceAccount -Property $SqlServiceParams -Method Test) {
-        Write-Output 'Skipping - already configured to desired state.'
+        Write-Output 'In desired state - SqlServiceAccount reports to be in desired state.'
     }
     else {
-        Write-Output "Configuring to desired state."
+        Write-Output "Configuring SqlServiceAccount to desired state."
         Invoke-DscResource -ModuleName SqlServerDsc -Name SqlServiceAccount -Property $SqlServiceParams -Method Set -Verbose
     }
 

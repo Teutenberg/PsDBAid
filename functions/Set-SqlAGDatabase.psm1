@@ -55,10 +55,10 @@ function Set-SqlAGDatabase
     $ErrorActionPreference = 'STOP'
 
     if ($Credential) {
-        $PrimaryServer = Connect-Sql -SqlServer $SqlServer -Credential $Credential
+        $PrimaryServer = Connect-SqlServer -SqlServer $SqlServer -Credential $Credential
     }
     else {
-        $PrimaryServer = Connect-Sql -SqlServer $SqlServer
+        $PrimaryServer = Connect-SqlServer -SqlServer $SqlServer
     }
 
     $PrimaryComputerName = $PrimaryServer.NetName
@@ -76,10 +76,10 @@ function Set-SqlAGDatabase
 
     foreach ($Replica in $SecondaryReplicas) {
         if ($Credential) {
-            $SecondaryServer = Connect-Sql -SqlServer $Replica -Credential $Credential
+            $SecondaryServer = Connect-SqlServer -SqlServer $Replica -Credential $Credential
         }
         else {
-            $SecondaryServer = Connect-Sql -SqlServer $Replica
+            $SecondaryServer = Connect-SqlServer -SqlServer $Replica
         }
 
         $SqlServiceAccounts += $SecondaryServer.ServiceAccount
@@ -127,10 +127,10 @@ function Set-SqlAGDatabase
     }
 
     if (Invoke-DscResource -ModuleName SqlServerDsc -Name SqlAGDatabase -Property $SqlAGDatabaseParams -Method Test) {
-        Write-Output 'Skipping - already configured to desired state.'	
+        Write-Output "In desired state - SqlAGDatabase reported to be in desired state." 
     }
     else {
-        Write-Output "Configuring to desired state."
+        Write-Output "Configuring SqlAGDatabase to desired state."
         Invoke-DscResource -ModuleName SqlServerDsc -Name SqlAGDatabase -Property $SqlAGDatabaseParams -Method Set
     }
 }

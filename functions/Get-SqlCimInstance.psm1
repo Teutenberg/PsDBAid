@@ -40,11 +40,11 @@ function Get-SqlCimInstance
     )
 
     if ($Credential) {
-        $Server = Connect-Sql -SqlServer $SourceSqlServer -Credential $Credential
+        $Server = Connect-SqlServer -SqlServer $SourceSqlServer -Credential $Credential
         $CimSession = New-CimSession -ComputerName $ComputerName -Credential $Credential
     }
     else {
-        $Server = Connect-Sql -SqlServer $SourceSqlServer
+        $Server = Connect-SqlServer -SqlServer $SourceSqlServer
         $CimSession = New-CimSession -ComputerName $ComputerName
     }
 

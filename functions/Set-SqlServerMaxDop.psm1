@@ -46,10 +46,10 @@ function Set-SqlServerMaxDop
     Write-Output "Checking SqlServerMaxDop: $SqlServer"
 
     if ($Credential) {
-        $Server = Connect-Sql -SqlServer $SourceSqlServer -Credential $Credential
+        $Server = Connect-SqlServer -SqlServer $SourceSqlServer -Credential $Credential
     }
     else {
-        $Server = Connect-Sql -SqlServer $SourceSqlServer
+        $Server = Connect-SqlServer -SqlServer $SourceSqlServer
     }
 
     $SqlMaxDopParams = @{
@@ -75,10 +75,10 @@ function Set-SqlServerMaxDop
     }
     
     if (Invoke-DscResource -ModuleName SqlServerDsc -Name SqlServerMaxDop -Property $SqlMaxDopParams -Method Test) {
-        Write-Output 'Skipping - already configured to desired state.'
+        Write-Output 'In desired state - SqlServerMaxDop reported to be in desired state.'
     } 
     else {
-        Write-Output "Configuring to desired state."
+        Write-Output "Configuring SqlServerMaxDop to desired state."
         Invoke-DscResource -ModuleName SqlServerDsc -Name SqlServerMaxDop -Property $SqlMaxDopParams -Method Set -Verbose
     }
 

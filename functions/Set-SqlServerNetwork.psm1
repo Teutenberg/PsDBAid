@@ -58,10 +58,10 @@ function Set-SqlServerNetwork
     Write-Output "Checking SqlServerNetwork: $SqlServer"
 
     if ($Credential) {
-        $Server = Connect-Sql -SqlServer $SourceSqlServer -Credential $Credential
+        $Server = Connect-SqlServer -SqlServer $SourceSqlServer -Credential $Credential
     }
     else {
-        $Server = Connect-Sql -SqlServer $SourceSqlServer
+        $Server = Connect-SqlServer -SqlServer $SourceSqlServer
     }
 
     $SqlServerNetworkParams = @{
@@ -94,10 +94,10 @@ function Set-SqlServerNetwork
     }
 
     if (Invoke-DscResource -ModuleName SqlServerDsc -Name SqlServerNetwork -Property $SqlServerNetworkParams -Method Test) {
-        Write-Output 'Skipping - already configured to desired state.'
+        Write-Output 'In desired state - SqlServerNetwork reported to be in desired state.'
     } 
     else {
-        Write-Output "Configuring to desired state."
+        Write-Output "Configuring SqlServerNetwork to desired state."
         Invoke-DscResource -ModuleName SqlServerDsc -Name SqlServerNetwork -Property $SqlServerNetworkParams -Method Set -Verbose
     }
 

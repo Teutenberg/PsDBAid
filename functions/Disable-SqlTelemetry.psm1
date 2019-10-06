@@ -17,7 +17,7 @@ function Disable-SqlTelemetry
         }
 
         if (Invoke-DscResource -ModuleName PSDesiredStateConfiguration -Name Service -Property $ServiceParams -Method Test) {
-            Write-Output 'Skipping - Telemetry already disabled.'
+            Write-Output 'In desired state - Telemetry already disabled.'
         }
         else {
             Write-Output "Disabling Telemetry service '$Service'."

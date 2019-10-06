@@ -13,7 +13,7 @@
     .PARAMETER StatementTimeout
         Set the query StatementTimeout in seconds. Default 600 seconds (10mins).
 #>
-function Connect-Sql
+function Connect-SqlServer
 {
     [CmdletBinding()]
     param

@@ -45,10 +45,10 @@ function Backup-SqlServiceMasterKey
     )
     
     if ($Credential) {
-        $Server = Connect-Sql -SqlServer $SqlServer -Credential $Credential
+        $Server = Connect-SqlServer -SqlServer $SqlServer -Credential $Credential
     }
     else {
-        $Server = Connect-Sql -SqlServer $SqlServer
+        $Server = Connect-SqlServer -SqlServer $SqlServer
     }
 
     if ([String]::IsNullOrEmpty($Path)) { $Path = $Server.BackupDirectory } 

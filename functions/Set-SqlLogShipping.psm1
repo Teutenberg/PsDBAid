@@ -85,12 +85,12 @@ function Set-SqlLogShipping
     $ErrorActionPreference = "Stop"
 
     if ($Credential) {
-        $pSQLServerObject = Connect-Sql -SqlServer $SourceSqlServer -Credential $Credential
-        $sSQLServerObject = Connect-Sql -SqlServer $SourceSqlServer -Credential $Credential
+        $pSQLServerObject = Connect-SqlServer -SqlServer $SourceSqlServer -Credential $Credential
+        $sSQLServerObject = Connect-SqlServer -SqlServer $SourceSqlServer -Credential $Credential
     }
     else {
-        $pSQLServerObject = Connect-Sql -SqlServer $SourceSqlServer
-        $sSQLServerObject = Connect-Sql -SqlServer $SourceSqlServer
+        $pSQLServerObject = Connect-SqlServer -SqlServer $SourceSqlServer
+        $sSQLServerObject = Connect-SqlServer -SqlServer $SourceSqlServer
     }
 
     <# Set direcotries paths #>

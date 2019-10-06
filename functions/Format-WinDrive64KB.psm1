@@ -1,31 +1,71 @@
-[string[]]$DrivesLettersToFormat = $st_DrivesLettersToFormat.Split(';')
+<#
+    .SYNOPSIS
+        Connect to a computer and format a list of disk drives to 64KB.
 
-if ( Get-Disk | Where-Object IsOffline –eq $true ) {
-    Write-Output "Bringing offline disks online..."
-    Get-Disk | Where-Object IsOffline –eq $true | Set-Disk –IsOffline $false
-    Get-Disk | Where-Object IsReadonly –eq $true | Set-Disk -IsReadonly $false
-}
+    .PARAMETER ComputerName
+        String containing the Computer where you want to get CIM instance from.
 
-$DriveVolumes = Get-Volume | Where {$DrivesLettersToFormat -match $_.DriveLetter -and $_.DriveLetter -ne $null } | Select @{l="DriveLetter";e={$_.DriveLetter + ":"}}, FileSystemLabel
-$DrivesToFormat = Get-WmiObject -Class Win32_Volume | Where {$DriveVolumes.DriveLetter -match $_.DriveLetter -and $_.BlockSize -ne 65536 }
+    .PARAMETER DrivesLettersToFormat
+        String containing the CIM SQL class you want.
 
-# confirmpreference is a workaround for Format-Volume bug
-$currentconfirm = $confirmpreference
-$confirmpreference = 'none'
+    .PARAMETER Credential
+        PSCredential object to impersonate when connecting. 
+#>
+function Format-WinDrive64KB
+{
+    [CmdletBinding()]
+    param
+    (
+        [Parameter()]
+        [ValidateNotNull()]
+        [System.String]
+        $ComputerName = $env:COMPUTERNAME,
 
-if ($DrivesToFormat) {
-    foreach ($drive in $DrivesToFormat) {
-	    # if drive empty format volume
-        if ((Get-ChildItem -Path $drive.DriveLetter -Force).Where({$_.Name -ine "System Volume Information" -and $_.Name -ine "`$RECYCLE.BIN" }).Count -eq 0) {
-    	    Write-Output "Formatting disk '$($drive.DriveLetter)' with 64KB block size..."
-            Format-Volume -DriveLetter $drive.Name[0] -NewFileSystemLabel $drive.FileSystemLabel -FileSystem NTFS -AllocationUnitSize 64KB -Force
-        } else {
-    	    Write-Output "Disk '$($drive.DriveLetter)' requires formatting with 64KB block size, but is not empty so skipping..."
+        [Parameter(Mandatory)]
+        [ValidateNotNullOrEmpty()]
+        [System.String[]]
+        $DrivesLettersToFormat,
+
+        [Parameter()]
+        [ValidateNotNull()]
+        [System.Management.Automation.PSCredential]
+        $Credential
+    )
+
+    if ($Credential) {
+        $CimSession = New-CimSession -ComputerName $ComputerName -Credential $Credential
+    }
+    else {
+        $CimSession = New-CimSession -ComputerName $ComputerName 
+    }
+
+    $DrivesToFormat = Get-CimInstance -CimSession $CimSession -ClassName 'Win32_Volume' -Filter 'BlockSize <> 65536' | 
+        Where-Object { $DrivesLettersToFormat -match $_.DriveLetter }
+
+    # confirmpreference is a workaround for Format-Volume bug
+    $currentconfirm = $confirmpreference
+    $confirmpreference = 'none'
+
+    if ($DrivesToFormat) {
+        foreach ($drive in $DrivesToFormat) {
+            $DriveLetter = $drive.DriveLetter
+            <# CHECK for FILES #>
+            $Files = Get-CimInstance -CimSession $CimSession -ClassName CIM_LogicalFile `
+                -Filter "FileType = 'File Folder' AND System = 'False' AND Drive LIKE '%$DriveLetter%'" | Select-Object -first 1
+            
+            # if drive empty format volume
+            if ($Files) {
+                Write-Output "Disk '$($drive.DriveLetter)' requires formatting with 64KB block size, but is not empty so no action will be taken..."
+            } else {
+                Write-Output "Formatting disk '$($drive.DriveLetter)' with 64KB block size..."
+                Format-Volume -CimSession $CimSession -DriveLetter $drive.Name[0] -NewFileSystemLabel $drive.FileSystemLabel -FileSystem 'NTFS' -AllocationUnitSize '64KB' -Force
+            }
         }
     }
-}
-else {
-    Write-Output 'All disks are in expected state with 64KB block size...'
-}
+    else {
+        Write-Output 'All disks are in expected state with 64KB block size...'
+    }
 
-$confirmpreference = $currentconfirm 
+    $confirmpreference = $currentconfirm
+    Remove-CimSession -CimSession $CimSession
+}

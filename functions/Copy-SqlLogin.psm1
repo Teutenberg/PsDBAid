@@ -54,7 +54,7 @@ function Copy-SqlLogin
         $Exclude
     )
     
-    $SourceServer = Connect-Sql -SqlServer $SourceSqlServer -Credential $Credential
+    $SourceServer = Connect-SqlServer -SqlServer $SourceSqlServer -Credential $Credential
     $SourceLogins = $SourceServer.Logins.Where({ $_.Sid -ne 1 -and $_.Name -notlike "##*" -and $_.Name -notin $Exclude -and ($_.Name -ilike $Filter -or $_Name -iin $Include) })
 
     Write-Output -Message "Copying logins from source to destinations..."
@@ -63,7 +63,7 @@ function Copy-SqlLogin
     $SourceLogins | ForEach-Object { Write-Verbose -Message "`t$($_.Name)" }
 
     foreach ($DestSqlServer in $DestinationSqlServers) {
-        $DestServer = Connect-Sql -SqlServer $DestSqlServer -Credential $Credential
+        $DestServer = Connect-SqlServer -SqlServer $DestSqlServer -Credential $Credential
         
         Write-Output -Message "Connected to destination server: $DestSqlServer"
         

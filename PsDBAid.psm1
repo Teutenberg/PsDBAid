@@ -7,4 +7,5 @@ Import-Module SqlServer
 Import-Module SqlServerDsc
 #Import-Module ReportingServicesTools
 
-Import-Module '.\functions\*.psm1'
+$Functions = Get-ChildItem -Path '.\functions'
+Import-Module -Name $Functions.FullName -force
