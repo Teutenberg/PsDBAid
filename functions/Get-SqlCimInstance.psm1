@@ -3,7 +3,7 @@
         Connect to a computer and returns the SQL Service information. 
 
     .PARAMETER ComputerName
-        String containing the Computer where you want to get CIM instance from.
+        String containing the computer where you want to get CIM instance from.
 
     .PARAMETER SqlClass
         String containing the CIM SQL class you want.
@@ -40,19 +40,19 @@ function Get-SqlCimInstance
     )
 
     if ($Credential) {
-        $Server = Connect-SqlServer -SqlServer $SourceSqlServer -Credential $Credential
         $CimSession = New-CimSession -ComputerName $ComputerName -Credential $Credential
     }
     else {
-        $Server = Connect-SqlServer -SqlServer $SourceSqlServer
         $CimSession = New-CimSession -ComputerName $ComputerName
     }
 
-    $NameSpace = 'Root\Microsoft\SqlServer\ComputerManagement' +  $Server.VersionMajor
-    
+    $NsLeaf = Get-CimInstance -Namespace Root\Microsoft\SqlServer -ClassName __Namespace -Filter "Name LIKE 'ComputerManagement__'" | 
+        Sort-Object -Property Name -Descending | 
+        Select-Object -ExpandProperty Name
+
     $CimInstanceParams = @{
         CimSession = $CimSession
-        Namespace  = $NameSpace
+        Namespace  = 'Root\Microsoft\SqlServer\' + $NsLeaf
         Class      = $SqlClass
     }
 
