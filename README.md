@@ -1,2 +1,2 @@
 # PsDBAid
-PowerShell module with useful SQL Server functions.
+PowerShell module with useful SQL Server functions for automation.
