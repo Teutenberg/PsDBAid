@@ -85,17 +85,17 @@ function Set-SqlLogShipping
     $ErrorActionPreference = "Stop"
 
     if ($Credential) {
-        $pSQLServerObject = Connect-SqlServer -SqlServer $SourceSqlServer -Credential $Credential
-        $sSQLServerObject = Connect-SqlServer -SqlServer $SourceSqlServer -Credential $Credential
+        $pSQLServerObject = Connect-SqlServer -SqlServer $PrimarySqlServer -Credential $Credential
+        $sSQLServerObject = Connect-SqlServer -SqlServer $SecondarySqlServer -Credential $Credential
     }
     else {
-        $pSQLServerObject = Connect-SqlServer -SqlServer $SourceSqlServer
-        $sSQLServerObject = Connect-SqlServer -SqlServer $SourceSqlServer
+        $pSQLServerObject = Connect-SqlServer -SqlServer $PrimarySqlServer
+        $sSQLServerObject = Connect-SqlServer -SqlServer $SecondarySqlServer
     }
 
     <# Set direcotries paths #>
-    if ([String]::IsNullOrEmpty($PrimaryDir)) { $PrimaryDir = $pSQLServerObject.BackupDirectory }
-    if ([String]::IsNullOrEmpty($SecondaryDir)) { $SecondaryDir = $sSQLServerObject.BackupDirectory }
+    if ([String]::IsNullOrEmpty($PrimaryDir)) { $PrimaryDir = $(Split-Path $pSQLServerObject.BackupDirectory -Parent) }
+    if ([String]::IsNullOrEmpty($SecondaryDir)) { $SecondaryDir = $(Split-Path $sSQLServerObject.BackupDirectory) }
     $PrimaryDir = [IO.Path]::Combine($PrimaryDir,'logshipping-primary',$PrimaryDatabase)
     $SecondaryDir = [IO.Path]::Combine($SecondaryDir,'logshipping-secondary',$SecondaryDatabase)
 
@@ -125,8 +125,8 @@ function Set-SqlLogShipping
     $sMoveStr = ''
     
     <# set smb share permmission variables #>
-    $pSmbAccess = @($SysAdminGroup, $pServiceAccountSql, $pServiceAccountAgt, $sServiceAccountSql, $sServiceAccountAgt) | Where-Object { $_.Length -gt 0 } | Select-Object -Unique
-    $sSmbAccess = @($SysAdminGroup, $sServiceAccountSql, $sServiceAccountAgt) | Where-Object { $_.Length -gt 0 } | Select-Object -Unique
+    $pSmbAccess = @($SysAdminGroup, $pServiceAccountSql, $pServiceAccountAgt, $sServiceAccountSql, $sServiceAccountAgt) | Where-Object { $_.Length -gt 0 } | Sort-Object -Unique
+    $sSmbAccess = @($SysAdminGroup, $sServiceAccountSql, $sServiceAccountAgt) | Where-Object { $_.Length -gt 0 } | Sort-Object -Unique
 
     $pSqlShareArgs = @{
         ComputerName  = $pComputerName
