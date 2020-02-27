@@ -13,7 +13,7 @@
     .PARAMETER ReleaseZipFile
         Path to the downloaded release zip file.
 #>
-function Install-DbaidDatabase
+function Deploy-Dacpac
 {
     [CmdletBinding()]
     param
@@ -22,33 +22,44 @@ function Install-DbaidDatabase
         [ValidateNotNull()]
         [System.String]
         $SqlServer = $env:COMPUTERNAME,
+        
+    $SqlDatabase = ''
+    $DacPath = ''
+    $RegisterDataTierApplication = 'True'
+    $BlockWhenDriftDetected = 'False'
+    $DropObjectsNotInSource = 'False'
+    $SqlPackageExe = 'C:\Program Files\Microsoft SQL Server\150\DAC\bin\SqlPackage.exe'
 
         [Parameter()]
         [ValidateNotNull()]
         [System.Management.Automation.PSCredential]
         $Credential,
-
-        [Parameter()]
-        [ValidateNotNullorEmpty()]
-        [System.String]
-        $ReleaseZipFile
     )
 
     $Smo = Connect-SqlServer -SqlServer $SqlServer -Credential $Credential
-    $Dac = New-Object -TypeName 'Microsoft.SqlServer.Management.Dac'
 
-    $DacPath = "\database\bin\Release\_dbaid.dacpac"
+    $Arguments = [System.Text.StringBuilder]::new()
+    [void]$sb.Append("/sf:$DacPath ")
+    [void]$sb.Append("/a:Publish ")
+    [void]$sb.Append("/tsn:$SqlServer ")
+    [void]$sb.Append("/TargetDatabaseName:$SqlDatabase ")
+    [void]$sb.Append("/p:RegisterDataTierApplication=$RegisterDataTierApplication ")
+    [void]$sb.Append("/p:BlockWhenDriftDetected=$BlockWhenDriftDetected ")
+    [void]$sb.Append("/p:DropObjectsNotInSource=$DropObjectsNotInSource ")
 
-    Write-Output "Deploying DBAid Solution to $SqlServer..."
+    $sessionOptions = New-PSSessionOption -IncludePortInSPN
+    $Session = New-PSSession -Computername $env:COMPUTERNAME -Credential $Credential -SessionOption $sessionOptions
 
-    Invoke-Command -ComputerName localhost -Credential $Credential -ScriptBlock {
+    Write-Output "Deploying dacpac to [$SqlServer].[$SqlDatabase]"
+
+    Invoke-Command -Session $Session -ScriptBlock {
         $pinfo = New-Object System.Diagnostics.ProcessStartInfo
         $pinfo.CreateNoWindow = $true
         $pinfo.UseShellExecute = $false
         $pinfo.RedirectStandardError = $true
         $pinfo.RedirectStandardOutput = $true
-        $pinfo.FileName = 'C:\Program Files\Microsoft SQL Server\150\DAC\bin\SqlPackage.exe'
-        $pinfo.Arguments = "/sf:$Using:DacPath /a:Publish /tsn:$Using:SqlServer /TargetDatabaseName:_dbaid /p:RegisterDataTierApplication=True /p:BlockWhenDriftDetected=False /p:DropObjectsNotInSource=False"
+        $pinfo.FileName = $Using:SqlPackageExe
+        $pinfo.Arguments = $Using:Arguments.ToString()
         $p = New-Object System.Diagnostics.Process
         $p.StartInfo = $pinfo
         $p.Start() | Out-Null
@@ -60,7 +71,7 @@ function Install-DbaidDatabase
         Write-Output "stdout: $stdout"
         Write-Output "stderr: $stderr"
         Write-Output "exit code: $($p.ExitCode)"
-        
+
         if ($p.ExitCode -ne 0){
             Write-Error "Failed to deploy package..."
         }
